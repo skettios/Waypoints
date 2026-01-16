@@ -1,22 +1,22 @@
 {
-    "Group": "Example",
-    "Name": "ExamplePlugin",
+    "Group": "skettios",
+    "Name": "Waypoints",
     "Version": "0.0.2",
-    "Description": "An example plugin for HyTale!",
+    "Description": "Waypoints",
     "Authors": [
         {
-            "Name": "It's you!"
+            "Name": ""
         }
     ],
-    "Website": "example.org",
+    "Website": "",
     "ServerVersion": "*",
     "Dependencies": {
-        
+        "Hytale:InteractionModule": "*"
     },
     "OptionalDependencies": {
         
     },
     "DisabledByDefault": false,
-    "Main": "org.example.plugin.ExamplePlugin",
+    "Main": "com.skettios.plugin.waypoints.WaypointsPlugin",
     "IncludesAssetPack": true
 }
