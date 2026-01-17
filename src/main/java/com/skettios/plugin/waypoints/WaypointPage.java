@@ -106,6 +106,8 @@ public class WaypointPage extends InteractiveCustomUIPage<WaypointPage.WaystoneP
             Teleport teleport = new Teleport(player.getWorld(), transform);
             store.addComponent(ref, Teleport.getComponentType(), teleport);
 
+            this.close();
+
             System.out.println("teleport");
         }
     }
