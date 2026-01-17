@@ -3,6 +3,7 @@ package com.skettios.plugin.waypoints;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.component.CommandBuffer;
+import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3i;
@@ -18,6 +19,7 @@ import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHa
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.RootInteraction;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.client.SimpleBlockInteraction;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
@@ -43,12 +45,22 @@ public class WaypointInteraction extends SimpleBlockInteraction {
         Store<EntityStore> store = ref.getStore();
         Player player = commandBuffer.getComponent(ref, Player.getComponentType());
         if (player != null) {
-            WaypointState state = (WaypointState) world.getState(vector3i.x, vector3i.y, vector3i.z, true);
-            PageManager pageManager = player.getPageManager();
-            Window[] window = new Window[1];
-            window[0] = (Window)new WaypointWindow(WindowType.Container, state);
-            pageManager.openCustomPage(ref, store, new WaypointPage(player.getPlayerRef()));
-            System.out.println("YES");
+            WaystoneManager manager = (WaystoneManager)store.getComponent(ref, WaypointsPlugin.INSTANCE.waystoneManagerComponentType);
+            if (manager != null) {
+                WaypointState state = (WaypointState)world.getState(vector3i.getX(), vector3i.getY(), vector3i.getZ(), false);
+                System.out.println("Test");
+                PageManager pageManager = player.getPageManager();
+                pageManager.openCustomPageWithWindows(ref, store, new WaypointPage(player.getPlayerRef(), state, manager));
+            }
+//            int block = world.getBlock(vector3i);
+//            Holder<ChunkStore> holder = world.getBlockComponentHolder(vector3i.getX(), vector3i.getY(), vector3i.getZ());
+//            WaypointComponent component = holder.getComponent(WaypointsPlugin.INSTANCE.waystoneComponentType);
+//            WaypointState state = (WaypointState) world.getState(vector3i.x, vector3i.y, vector3i.z, true);
+//            PageManager pageManager = player.getPageManager();
+//            Window[] window = new Window[1];
+//            window[0] = (Window)new WaypointWindow(WindowType.Container, state);
+//            pageManager.openCustomPage(ref, store, new WaypointPage(player.getPlayerRef(), state));
+//            System.out.println("YES");
         }
     }
 

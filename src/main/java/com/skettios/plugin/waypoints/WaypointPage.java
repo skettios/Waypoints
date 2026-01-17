@@ -4,10 +4,13 @@ import com.hypixel.hytale.builtin.teleport.WarpListPage;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
+import com.hypixel.hytale.component.ComponentType;
+import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -18,6 +21,7 @@ import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
@@ -26,8 +30,13 @@ import java.util.HashMap;
 import java.util.List;
 
 public class WaypointPage extends InteractiveCustomUIPage<WaypointPage.WaystonePageEventData> {
-    public WaypointPage(@NonNullDecl PlayerRef playerRef) {
+    private final WaypointState state;
+    private final WaystoneManager manager;
+
+    public WaypointPage(@NonNullDecl PlayerRef playerRef, @NonNullDecl WaypointState state, WaystoneManager manager) {
         super(playerRef, CustomPageLifetime.CanDismissOrCloseThroughInteraction, WaystonePageEventData.CODEC);
+        this.state = state;
+        this.manager = manager;
     }
 
     @Override
@@ -41,13 +50,9 @@ public class WaypointPage extends InteractiveCustomUIPage<WaypointPage.WaystoneP
 
     private void buildWaystoneList(Player player, UICommandBuilder commandBuilder, UIEventBuilder eventBuilder) {
         commandBuilder.clear("#WaystoneList");
-        if (!WaypointsPlugin.INSTANCE.waystones.containsKey(player.getUuid().toString()))
-            return;
 
-        HashMap<String, Waystone> waystoneMap = WaypointsPlugin.INSTANCE.waystones.get(player.getUuid().toString());
-        ArrayList<Waystone> waystones = new ArrayList<>(waystoneMap.values());
         int i = 0;
-        for (Waystone waystone : waystones) {
+        for (Waystone waystone : manager.getRegisteredWaystones().values()) {
             String buttonName = "#WaystoneList[" + i + "]";
             String waystoneName = waystone.getName();
             commandBuilder.append("#WaystoneList", "Pages/WarpEntryButton.ui");
@@ -61,35 +66,46 @@ public class WaypointPage extends InteractiveCustomUIPage<WaypointPage.WaystoneP
     @Override
     public void handleDataEvent(@NonNullDecl Ref<EntityStore> ref, @NonNullDecl Store<EntityStore> store, @NonNullDecl WaystonePageEventData data) {
         Player player = store.getComponent(ref, Player.getComponentType());
+
         if (data.waystoneName != null) {
-            if (!WaypointsPlugin.INSTANCE.waystones.containsKey(player.getUuid().toString()))
-                WaypointsPlugin.INSTANCE.waystones.put(player.getUuid().toString(), new HashMap<>());
+            if (!manager.hasWaystone(data.waystoneName)) {
+                Vector3i blockPosition = this.state.getBlockPosition();
+                manager.registerWaystone(data.waystoneName, new Waystone(data.waystoneName, player.getWorld(), blockPosition.getX(), blockPosition.y, blockPosition.getZ()));
 
-            HashMap<String, Waystone> list = WaypointsPlugin.INSTANCE.waystones.get(player.getUuid().toString());
-            if (list.keySet().contains(data.waystoneName)) {
-                System.out.println(data.waystoneName+ " is already in the list");
-                return;
+                UICommandBuilder commandBuilder = new UICommandBuilder();
+                UIEventBuilder eventBuilder = new UIEventBuilder();
+
+                buildWaystoneList(player, commandBuilder, eventBuilder);
+                sendUpdate(commandBuilder, eventBuilder, false);
             }
-
-            Vector3d playerPosition = player.getTransformComponent().getPosition();
-            WaypointsPlugin.INSTANCE.waystones.get(player.getUuid().toString()).put(data.waystoneName, new Waystone(data.waystoneName, player.getWorld(), Math.floor(playerPosition.x), Math.floor(playerPosition.y), Math.floor(playerPosition.z)));
-            WaypointsPlugin.INSTANCE.saveWaystones(player.getUuid());
-
-            UICommandBuilder commandBuilder = new UICommandBuilder();
-            UIEventBuilder eventBuilder = new UIEventBuilder();
-
-            buildWaystoneList(player, commandBuilder, eventBuilder);
-            sendUpdate(commandBuilder, eventBuilder, false);
-
-            System.out.println("saved");
+//            if (!WaypointsPlugin.INSTANCE.waystones.containsKey(player.getUuid().toString()))
+//                WaypointsPlugin.INSTANCE.waystones.put(player.getUuid().toString(), new HashMap<>());
+//
+//            HashMap<String, Waystone> list = WaypointsPlugin.INSTANCE.waystones.get(player.getUuid().toString());
+//            if (list.keySet().contains(data.waystoneName)) {
+//                System.out.println(data.waystoneName+ " is already in the list");
+//                return;
+//            }
+//
+//            Vector3i playerPosition = this.state.getBlockPosition();
+//            WaypointsPlugin.INSTANCE.waystones.get(player.getUuid().toString()).put(data.waystoneName, new Waystone(data.waystoneName, player.getWorld(), Math.floor(playerPosition.x), Math.floor(playerPosition.y), Math.floor(playerPosition.z)));
+//            WaypointsPlugin.INSTANCE.saveWaystones(player.getUuid());
+//
+//            UICommandBuilder commandBuilder = new UICommandBuilder();
+//            UIEventBuilder eventBuilder = new UIEventBuilder();
+//
+//            buildWaystoneList(player, commandBuilder, eventBuilder);
+//            sendUpdate(commandBuilder, eventBuilder, false);
+//
+//            System.out.println("saved");
         } else if (data.waystoneAction != null) {
-            Waystone waystone = WaypointsPlugin.INSTANCE.waystones.get(player.getUuid().toString()).get(data.waystoneAction);
-            Vector3d pos = waystone.getTransform().getPosition();
+            Waystone waystone = manager.getRegisteredWaystones().get(data.waystoneAction);
+            Transform transform = waystone.getTransform();
 
-            Teleport teleport = new Teleport(player.getWorld(), waystone.getTransform());
+            System.out.printf("Teleport: %s %f %f %f\n", waystone.getName(), transform.getPosition().x, transform.getPosition().y, transform.getPosition().z);
+            Teleport teleport = new Teleport(player.getWorld(), transform);
             store.addComponent(ref, Teleport.getComponentType(), teleport);
 
-            System.out.printf("Teleport: %s %f %f %f\n", waystone.getName(), pos.x, pos.y, pos.z);
             System.out.println("teleport");
         }
     }
